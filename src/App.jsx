@@ -1065,7 +1065,9 @@ export default function App() {
                         src={item.img}
                         alt={item.title}
                         loading="lazy"
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 will-change-transform transform-gpu"
+                        decoding="async"
+                        style={{ transform: 'translateZ(0)' }}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 will-change-transform transform-gpu"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 transition-opacity duration-300"></div>
                       <div className="absolute bottom-0 left-0 p-6 z-20 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
@@ -1980,4 +1982,3 @@ export default function App() {
       </footer>
     </div>
   );
-}
