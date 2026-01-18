@@ -530,7 +530,7 @@ export default function App() {
       const windowHeight =
         document.documentElement.scrollHeight -
         document.documentElement.clientHeight;
-      const scroll = `${totalScroll / windowHeight}`;
+      const scroll = totalScroll / windowHeight;
       setScrollProgress(Number(scroll));
     };
     window.addEventListener('scroll', handleScroll);
@@ -822,14 +822,52 @@ export default function App() {
 
   const addToGoogleCalendar = () => {
     const { selectedDate, selectedTime, childName } = formData;
+    
+    // 1. Encontrar el slot original usando el label (que es lo que guardamos en selectedDate)
+    const slot = displaySlots.find(s => s.label === selectedDate);
+    
+    let datesParam = '';
+    
+    if (slot && slot.date && selectedTime) {
+      // Crear objetos de fecha
+      // Nota: new Date("YYYY-MM-DDTHH:MM") crea una fecha en la zona horaria LOCAL del navegador
+      const startDateTime = new Date(`${slot.date}T${selectedTime}`);
+      const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hora de duración
+
+      // Función para formatear a YYYYMMDDTHHMMSSZ (UTC)
+      const formatToGoogleISO = (date) => {
+        return date.toISOString().replace(/-|:|\.\d\d\d/g, "");
+      };
+
+      datesParam = `&dates=${formatToGoogleISO(startDateTime)}/${formatToGoogleISO(endDateTime)}`;
+    }
+
     const text = encodeURIComponent(`Visita Colegio San Buenaventura - ${childName}`);
     const details = encodeURIComponent(`Visita de puertas abiertas para ${childName}.`);
     const location = encodeURIComponent("Calle de El Greco 16, 28011 Madrid");
 
     // Construcción simple de URL para Google Calendar
     // NOTA: Para una implementación precisa se requiere parsear selectedDate (YYYY-MM-DD) y Time
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&details=${details}&location=${location}`;
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&details=${details}&location=${location}${datesParam}`;
     window.open(url, '_blank');
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: 'Open House Colegio San Buenaventura',
+      text: '¡Ya he reservado mi visita para el Colegio San Buenaventura! ¿Te animas a venir?',
+      url: window.location.href
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        alert('Enlace copiado al portapapeles');
+      }
+    } catch (err) {
+      console.log('Error sharing', err);
+    }
   };
 
   const filteredRegistrations = useMemo(() => {
@@ -850,6 +888,33 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-indigo-100 selection:text-indigo-800">
+      <style>{`
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        @keyframes shimmer {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-shimmer {
+          background-size: 200% 200%;
+          animation: shimmer 6s ease infinite;
+        }
+      `}</style>
+
       {/* Botón Flotante */}
       {view === 'landing' && (
         <div
@@ -886,7 +951,7 @@ export default function App() {
             : 'bg-white/40 backdrop-blur-sm py-5 border-b border-transparent'
         }`}
       >
-        <div className="absolute top-0 left-0 h-[3px] bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-150 z-50"></div>
+        <div className="absolute bottom-0 left-0 h-[3px] bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-150 z-50" style={{ width: `${scrollProgress * 100}%` }}></div>
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           <div
             className="flex items-center gap-4 cursor-pointer group"
@@ -943,8 +1008,9 @@ export default function App() {
           {/* Hero Section */}
           <main className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24">
             <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
-              <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-200/30 rounded-full blur-[100px] animate-pulse"></div>
-              <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[60%] bg-blue-200/20 rounded-full blur-[120px]"></div>
+              <div className="absolute top-0 left-[-10%] w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+              <div className="absolute top-0 right-[-10%] w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+              <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
             </div>
             <div className="max-w-5xl mx-auto px-6 text-center relative z-10">
               <CountdownTimer targetDate="2026-03-11T09:00:00" />
@@ -1023,7 +1089,7 @@ export default function App() {
               </div>
               <h2 className="text-5xl md:text-7xl font-extrabold text-slate-900 mb-8 tracking-tight leading-[1.1]">
                 Innovación, Valores y<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-700 via-blue-600 to-indigo-500 drop-shadow-sm">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 drop-shadow-sm animate-shimmer">
                   Excelencia Educativa
                 </span>
               </h2>
@@ -1480,7 +1546,7 @@ export default function App() {
                             <Calendar size={18} /> {slot.label}
                           </div>
                           {isHighDemand && !isBlocked && (
-                            <div className="absolute top-0 right-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-3 py-1 rounded-bl-xl">
+                            <div className="absolute top-0 right-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-3 py-1 rounded-bl-xl animate-pulse">
                               Alta demanda
                             </div>
                           )}
@@ -1616,7 +1682,14 @@ export default function App() {
       {view === 'success' && (
         <main className="max-w-xl mx-auto px-4 py-24 text-center">
           <div className="bg-white rounded-[2.5rem] shadow-2xl p-12">
-            <CheckCircle size={48} className="text-emerald-500 mx-auto mb-4" />
+            {/* CheckCircle con efecto WOW */}
+            <div className="relative inline-block mb-6">
+              <div className="absolute inset-0 bg-emerald-200 rounded-full animate-ping opacity-75"></div>
+              <div className="relative bg-white rounded-full p-2">
+                <CheckCircle size={64} className="text-emerald-500" />
+              </div>
+            </div>
+            
             <h2 className="text-4xl font-extrabold text-slate-900 mb-4">
               ¡Reserva Confirmada!
             </h2>
@@ -1663,6 +1736,13 @@ export default function App() {
               </button>
 
               <button
+                onClick={handleShare}
+                className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Share2 size={20} /> Invitar a otra familia
+              </button>
+
+              <button
                 onClick={() => {
                   setFormData({
                     parentName: '',
@@ -1688,6 +1768,7 @@ export default function App() {
         </main>
       )}
 
+      {/* Footer y Admin sin cambios funcionales */}
       {view === 'adminLogin' && (
         <main className="max-w-md mx-auto px-4 py-20">
           <div className="bg-white p-10 rounded-[2rem] shadow-2xl border border-slate-100">
@@ -1982,3 +2063,4 @@ export default function App() {
       </footer>
     </div>
   );
+}
