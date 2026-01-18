@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
-import {
-  getAuth,
-  signInAnonymously,
-  onAuthStateChanged,
-  signInWithCustomToken,
-} from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import {
   getFirestore,
   collection,
@@ -28,6 +23,7 @@ import {
   Search,
   School,
   ChevronRight,
+  ChevronLeft,
   User,
   Mail,
   Phone,
@@ -107,8 +103,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const appId =
-  typeof __app_id !== 'undefined' ? __app_id : 'inscripciones-web-publica';
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'inscripciones-web-publica';
 
 // --- Configuración de la App ---
 const COLLECTION_NAME = 'open_house_registrations_v2_sanbuenaventura';
@@ -118,8 +113,7 @@ const ADMIN_PASSWORD = 'Itinerarium@1274';
 const DEFAULT_CONTACT_EMAIL = 'infantil@sanbuenaventura.org';
 const INSTAGRAM_URL = 'https://www.instagram.com/cs_buenaventura/?hl=es';
 const LOGO_URL = 'https://i.ibb.co/FLS9ybLj/cropped-Colegio-1.png';
-const MICOLE_URL =
-  'https://www.micole.net/madrid/madrid/colegio-san-buenaventura';
+const MICOLE_URL = 'https://www.micole.net/madrid/madrid/colegio-san-buenaventura';
 
 // Fechas INICIALES (FIJAS - EI/EP)
 const DEFAULT_EI_EP_SLOTS = [
@@ -237,28 +231,28 @@ const FACILITIES_IMAGES = [
 // Datos de Proyectos
 const PROJECTS_DATA = [
   {
-    title: 'Natación',
+    title: 'Natación Escolar',
     icon: Waves,
     color: 'text-indigo-600 bg-indigo-50',
     border: 'border-indigo-500',
     desc: 'Integrada en horario lectivo.',
   },
   {
-    title: 'Psicomotricidad',
+    title: 'Desarrollo Motor',
     icon: Move,
     color: 'text-pink-600 bg-pink-50',
     border: 'border-pink-300',
     desc: 'Desarrollo integral del niño.',
   },
   {
-    title: 'Identidad',
+    title: 'Valores y Liderazgo',
     icon: Sparkles,
     color: 'text-yellow-600 bg-yellow-50',
     border: 'border-yellow-300',
     desc: 'Valores franciscanos.',
   },
   {
-    title: 'Cocina Propia',
+    title: 'Nutrición y Salud',
     icon: Utensils,
     color: 'text-emerald-600 bg-emerald-50',
     border: 'border-emerald-300',
@@ -279,21 +273,21 @@ const PROJECTS_DATA = [
     desc: 'Experimentación real.',
   },
   {
-    title: 'Radio',
+    title: 'Oratoria y Radio',
     icon: Mic,
     color: 'text-red-600 bg-red-50',
     border: 'border-red-300',
     desc: 'Mejora de la oratoria.',
   },
   {
-    title: 'Ajedrez',
+    title: 'Estrategia',
     icon: Brain,
     color: 'text-amber-600 bg-amber-50',
     border: 'border-amber-300',
     desc: 'Pensamiento estratégico.',
   },
   {
-    title: 'Música',
+    title: 'Artes y Música',
     icon: Music,
     color: 'text-violet-600 bg-violet-50',
     border: 'border-violet-300',
@@ -306,6 +300,29 @@ const PROJECTS_DATA = [
     border: 'border-orange-300',
     desc: 'Animación a la lectura.',
   },
+];
+
+const TESTIMONIALS_DATA = [
+  {
+    text: "Un colegio de referencia. Ambiente cercano y familiar.",
+    author: "P. P.",
+    role: "Familia del Centro"
+  },
+  {
+    text: "Trato personal magnífico. Mi hija se siente motivada.",
+    author: "M. M.",
+    role: "Madre de alumna"
+  },
+  {
+    text: "El colegio de mis nietas. Muy bueno, nos tratan muy bien y estamos muy contentos.",
+    author: "N. G.",
+    role: "Abuela de alumnas"
+  },
+  {
+    text: "El mejor colegio de la historia. Mi prima va y dice que le encanta.",
+    author: "A. J. O.",
+    role: "Familiar de alumna"
+  }
 ];
 
 const GRADES_EI_EP = [
@@ -442,6 +459,7 @@ export default function App() {
   const [slotStatus, setSlotStatus] = useState({});
   const [openFaq, setOpenFaq] = useState(null);
   const [formError, setFormError] = useState('');
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [formData, setFormData] = useState({
     parentName: '',
     email: '',
@@ -494,6 +512,14 @@ export default function App() {
   }
 
   useEffect(() => {
+    // Auto-advance testimonials
+    const interval = setInterval(() => {
+      setActiveTestimonial((prev) => (prev + 1) % TESTIMONIALS_DATA.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, [view]);
 
@@ -514,13 +540,10 @@ export default function App() {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        if (
-          typeof __initial_auth_token !== 'undefined' &&
-          __initial_auth_token
-        ) {
-          await signInWithCustomToken(auth, __initial_auth_token);
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+           await signInWithCustomToken(auth, __initial_auth_token);
         } else {
-          await signInAnonymously(auth);
+           await signInAnonymously(auth);
         }
       } catch (error) {
         console.error('Auth error:', error);
@@ -543,17 +566,17 @@ export default function App() {
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date(),
         }));
-
+        
         // Ordenar: Primero por índice del curso (GRADES), luego por fecha de creación
         data.sort((a, b) => {
           const indexA = GRADES.indexOf(a.interestedGrade);
           const indexB = GRADES.indexOf(b.interestedGrade);
-
+          
           if (indexA !== -1 && indexB !== -1) {
             // Si ambos cursos existen en la lista, ordenar por su posición
             return indexA - indexB;
           }
-
+          
           // Si alguno no tiene curso o no está en la lista (raro), fallback a fecha
           return b.createdAt - a.createdAt;
         });
@@ -625,21 +648,19 @@ export default function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
-
+    
     // Validación estricta de todos los campos obligatorios
     if (
-      !formData.parentName ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.childName ||
+      !formData.parentName || 
+      !formData.email || 
+      !formData.phone || 
+      !formData.childName || 
       !formData.childAge
     ) {
-      setFormError(
-        'Por favor, completa todos los datos obligatorios (Datos de familia y alumno).'
-      );
+      setFormError('Por favor, completa todos los datos obligatorios (Datos de familia y alumno).');
       return;
     }
-
+    
     if (!formData.interestedGrade) {
       setFormError('Por favor, selecciona el curso de interés.');
       return;
@@ -745,7 +766,7 @@ export default function App() {
     }
   };
   const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
-
+  
   // FUNCIONALIDAD REAL DE EXPORTACIÓN A EXCEL/CSV
   const exportToCSV = () => {
     if (registrations.length === 0) {
@@ -764,13 +785,13 @@ export default function App() {
       'Nombre Alumno',
       'Año Nacimiento',
       'Asistentes',
-      'Fecha Registro',
+      'Fecha Registro'
     ];
 
     // Convertir datos a filas CSV
     const csvContent = [
       headers.join(','),
-      ...registrations.map((reg) => {
+      ...registrations.map(reg => {
         const row = [
           reg.selectedDate,
           reg.selectedTime,
@@ -781,26 +802,19 @@ export default function App() {
           reg.childName,
           reg.childAge,
           reg.attendeesCount,
-          reg.createdAt ? new Date(reg.createdAt).toLocaleString() : '',
+          reg.createdAt ? new Date(reg.createdAt).toLocaleString() : ''
         ];
         // Escapar comillas y envolver en comillas para manejar comas en los datos
-        return row
-          .map((field) => `"${String(field || '').replace(/"/g, '""')}"`)
-          .join(',');
-      }),
+        return row.map(field => `"${String(field || '').replace(/"/g, '""')}"`).join(',');
+      })
     ].join('\n');
 
     // Crear Blob con BOM para que Excel reconozca caracteres especiales (tildes, ñ)
-    const blob = new Blob(['\uFEFF' + csvContent], {
-      type: 'text/csv;charset=utf-8;',
-    });
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute(
-      'download',
-      `inscripciones_open_house_${new Date().toISOString().slice(0, 10)}.csv`
-    );
+    link.setAttribute('download', `inscripciones_open_house_${new Date().toISOString().slice(0,10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -808,13 +822,9 @@ export default function App() {
 
   const addToGoogleCalendar = () => {
     const { selectedDate, selectedTime, childName } = formData;
-    const text = encodeURIComponent(
-      `Visita Colegio San Buenaventura - ${childName}`
-    );
-    const details = encodeURIComponent(
-      `Visita de puertas abiertas para ${childName}.`
-    );
-    const location = encodeURIComponent('Calle de El Greco 16, 28011 Madrid');
+    const text = encodeURIComponent(`Visita Colegio San Buenaventura - ${childName}`);
+    const details = encodeURIComponent(`Visita de puertas abiertas para ${childName}.`);
+    const location = encodeURIComponent("Calle de El Greco 16, 28011 Madrid");
 
     // Construcción simple de URL para Google Calendar
     // NOTA: Para una implementación precisa se requiere parsear selectedDate (YYYY-MM-DD) y Time
@@ -842,7 +852,9 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-indigo-100 selection:text-indigo-800">
       {/* Botón Flotante */}
       {view === 'landing' && (
-        <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-slate-200 p-3 md:bg-transparent md:border-none md:p-0 md:bottom-8 md:right-8 md:left-auto md:w-auto">
+        <div
+          className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-slate-200 p-3 md:bg-transparent md:border-none md:p-0 md:bottom-8 md:right-8 md:left-auto md:w-auto"
+        >
           <button
             type="button"
             onClick={() => setView('form')}
@@ -856,7 +868,7 @@ export default function App() {
       )}
 
       {/* Header Info Banner */}
-      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-4 py-3 text-center text-sm font-bold shadow-md relative z-50 flex justify-center items-center gap-2 tracking-wide">
+      <div className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-4 py-3 text-center text-sm font-bold shadow-md relative z-50 flex justify-center items-center gap-2 tracking-wide">
         <Info size={18} className="text-white/90" />
         <span className="drop-shadow-sm">
           Plazo Oficial de Admisión 25-26:{' '}
@@ -929,13 +941,39 @@ export default function App() {
       {view === 'landing' && (
         <>
           {/* Hero Section */}
-          <main className="relative overflow-hidden pt-12 pb-24 md:pt-20 md:pb-32">
+          <main className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24">
             <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
               <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-200/30 rounded-full blur-[100px] animate-pulse"></div>
               <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[60%] bg-blue-200/20 rounded-full blur-[120px]"></div>
             </div>
             <div className="max-w-5xl mx-auto px-6 text-center relative z-10">
               <CountdownTimer targetDate="2026-03-11T09:00:00" />
+              
+              {/* Testimonios Carrusel - Posición Nueva */}
+              <div className="max-w-3xl mx-auto mb-10 overflow-hidden relative min-h-[120px]">
+                {TESTIMONIALS_DATA.map((t, idx) => (
+                  <div 
+                    key={idx}
+                    className={`absolute inset-0 transition-opacity duration-700 ease-in-out flex flex-col items-center justify-center ${
+                      idx === activeTestimonial ? 'opacity-100 relative z-10' : 'opacity-0 absolute z-0'
+                    }`}
+                  >
+                    <div className="flex text-amber-400 mb-2 space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} fill="currentColor" size={16} />
+                      ))}
+                    </div>
+                    <p className="text-slate-600 text-lg italic mb-2 font-medium">"{t.text}"</p>
+                    <p className="text-xs font-bold text-indigo-700 uppercase tracking-wide flex items-center gap-1">
+                      {t.author} - {t.role}
+                      <span className="text-[10px] text-slate-400 font-normal ml-1 border-l border-slate-300 pl-2">
+                        Opiniones de Micole
+                      </span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+
               <div className="max-w-4xl mx-auto mb-10 bg-white/60 backdrop-blur-md rounded-2xl p-6 border border-white shadow-xl animate-fade-in-up">
                 <div className="flex flex-col md:flex-row gap-6 items-start">
                   <div className="flex-1 w-full">
@@ -1004,12 +1042,79 @@ export default function App() {
             </div>
           </main>
 
-          {/* Agenda */}
-          <div className="max-w-4xl mx-auto px-6 mb-24 mt-10">
+          {/* Instalaciones - MOVIDO ARRIBA */}
+          <section className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-6">
+              <div className="text-center mb-16">
+                <h3 className="text-4xl font-extrabold text-slate-900 mb-4">
+                  Espacios para crecer
+                </h3>
+                <p className="text-slate-500 max-w-2xl mx-auto">
+                  Un entorno diseñado para potenciar el aprendizaje y el bienestar de nuestros alumnos.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {FACILITIES_IMAGES.map((item) => {
+                  const FacilityIcon = item.icon;
+                  return (
+                    <div
+                      key={item.id}
+                      className={`${item.cols} relative h-64 rounded-3xl overflow-hidden group shadow-lg cursor-pointer`}
+                    >
+                      <img
+                        src={item.img}
+                        alt={item.title}
+                        loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 will-change-transform transform-gpu"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 transition-opacity duration-300"></div>
+                      <div className="absolute bottom-0 left-0 p-6 z-20 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                        <h4 className="text-white text-xl font-bold flex items-center gap-2 mb-1">
+                          <FacilityIcon size={20} className="text-white/90" />
+                          {item.title}
+                        </h4>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          {/* Metodología */}
+          <div className="max-w-7xl mx-auto px-6 my-24">
+            <div className="bg-white/80 backdrop-blur-xl p-10 md:p-16 rounded-[2.5rem] shadow-xl border border-white relative overflow-hidden">
+              <div className="text-center mb-12">
+                <h3 className="text-3xl font-extrabold text-slate-900 mb-3">
+                  Vanguardia Metodológica
+                </h3>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                {PROJECTS_DATA.map((item, i) => {
+                  const PIcon = item.icon;
+                  return (
+                    <div key={i} className="text-center p-4 border border-slate-100 bg-white rounded-2xl hover:shadow-lg transition-shadow duration-300">
+                      <div
+                        className={`w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 ${item.color}`}
+                      >
+                        <PIcon size={28} />
+                      </div>
+                      <h4 className="font-bold text-slate-800">{item.title}</h4>
+                      <p className="text-xs text-slate-500 mt-2">{item.desc}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Agenda - MOVIDO ABAJO */}
+          <div className="max-w-4xl mx-auto px-6 mb-24">
             <div className="text-center mb-16">
               <h3 className="text-3xl font-extrabold text-slate-900">
-                Agenda de la Jornada
+                Tu Visita, Paso a Paso
               </h3>
+              <p className="text-slate-500 mt-2">Diseñamos esta experiencia para resolver todas tus dudas.</p>
             </div>
             <div className="relative">
               <div className="absolute left-[28px] md:left-1/2 top-4 bottom-4 w-0.5 bg-gradient-to-b from-indigo-100 via-indigo-200 to-indigo-100 md:-translate-x-1/2"></div>
@@ -1017,30 +1122,30 @@ export default function App() {
                 {[
                   {
                     time: "10'",
-                    title: 'Bienvenida Institucional',
-                    desc: 'Recepción por el equipo de titularidad.',
+                    title: 'Acogida',
+                    desc: 'Bienvenida a la familia San Buenaventura. Recepción por el equipo directivo.',
                     icon: <User size={20} />,
                     color: 'text-blue-600 bg-blue-50',
                   },
                   {
                     time: "50'",
-                    title: 'Visita Guiada Integral',
-                    desc: 'Recorrido detallado por nuestras instalaciones.',
+                    title: 'Recorrido',
+                    desc: 'Itinerario minucioso por nuestro colegio. Conoce hasta el último rincón del colegio de tu hijo/a.',
                     icon: <MapIcon size={20} />,
                     color: 'text-emerald-600 bg-emerald-50',
                     details: TOUR_STOPS,
                   },
                   {
                     time: "10'",
-                    title: 'Proceso de Admisión',
-                    desc: 'Explicación breve de plazos.',
+                    title: 'Matrícula',
+                    desc: 'Toda la información y plazos que necesitas para formalizar la inscripción.',
                     icon: <FileText size={20} />,
                     color: 'text-amber-600 bg-amber-50',
                   },
                   {
                     time: "20'",
-                    title: 'Café y Dudas',
-                    desc: 'Espacio distendido.',
+                    title: 'Un Café',
+                    desc: 'Un espacio distendido para plantear todas las dudas personales que tengas.',
                     icon: <Coffee size={20} />,
                     color: 'text-indigo-600 bg-indigo-50',
                   },
@@ -1100,168 +1205,25 @@ export default function App() {
             </div>
           </div>
 
-          {/* Metodología */}
-          <div className="max-w-7xl mx-auto px-6 mb-24">
-            <div className="bg-white/80 backdrop-blur-xl p-10 md:p-16 rounded-[2.5rem] shadow-xl border border-white relative overflow-hidden">
-              <div className="text-center mb-12">
-                <h3 className="text-3xl font-extrabold text-slate-900 mb-3">
-                  Vanguardia Metodológica
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                {PROJECTS_DATA.slice(0, 4).map((item, i) => {
-                  const PIcon = item.icon;
-                  return (
-                    <div key={i} className="text-center p-4 border rounded-2xl">
-                      <div
-                        className={`w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4 ${item.color}`}
-                      >
-                        <PIcon size={28} />
-                      </div>
-                      <h4 className="font-bold">{item.title}</h4>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Instalaciones */}
-          <section className="py-20 bg-white">
-            <div className="max-w-7xl mx-auto px-6">
-              <div className="text-center mb-16">
-                <h3 className="text-4xl font-extrabold text-slate-900 mb-4">
-                  Espacios para crecer
-                </h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {FACILITIES_IMAGES.map((item) => {
-                  const FacilityIcon = item.icon;
-                  return (
-                    <div
-                      key={item.id}
-                      className={`${item.cols} relative h-64 rounded-3xl overflow-hidden group shadow-lg cursor-pointer`}
-                    >
-                      <img
-                        src={item.img}
-                        alt={item.title}
-                        loading="lazy"
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 will-change-transform transform-gpu"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 transition-opacity duration-300"></div>
-                      <div className="absolute bottom-0 left-0 p-6 z-20 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                        <h4 className="text-white text-xl font-bold flex items-center gap-2 mb-1">
-                          <FacilityIcon size={20} className="text-white/90" />
-                          {item.title}
-                        </h4>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
-          {/* Testimonios */}
-          <section className="bg-slate-900 text-white py-24 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-900/30 rounded-full blur-3xl -mr-20 -mt-20"></div>
-            <div className="max-w-7xl mx-auto px-6 relative z-10">
-              <div className="text-center mb-16">
-                <h3 className="text-4xl font-extrabold mb-4">
-                  Lo que dicen nuestras familias
-                </h3>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
-                <div className="bg-white/5 p-8 rounded-3xl border border-white/10">
-                  <div className="flex text-amber-400 mb-4 space-x-1">
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                  </div>
-                  <p className="text-slate-300 text-lg italic mb-6">
-                    "Un colegio de referencia. Ambiente cercano y familiar."
-                  </p>
-                  <div className="font-bold">
-                    P. P.{' '}
-                    <span className="block text-sm font-normal text-slate-400">
-                      Familia del Centro
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-white/5 p-8 rounded-3xl border border-white/10">
-                  <div className="flex text-amber-400 mb-4 space-x-1">
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                  </div>
-                  <p className="text-slate-300 text-lg italic mb-6">
-                    "Trato personal magnífico. Mi hija se siente motivada."
-                  </p>
-                  <div className="font-bold">
-                    M. M.{' '}
-                    <span className="block text-sm font-normal text-slate-400">
-                      Madre de alumna
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-white/5 p-8 rounded-3xl border border-white/10">
-                  <div className="flex text-amber-400 mb-4 space-x-1">
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                  </div>
-                  <p className="text-slate-300 text-lg italic mb-6">
-                    "El colegio de mis nietas. Muy bueno, nos tratan muy bien y
-                    estamos muy contentos."
-                  </p>
-                  <div className="font-bold">
-                    N. G.{' '}
-                    <span className="block text-sm font-normal text-slate-400">
-                      Abuela de alumnas
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-white/5 p-8 rounded-3xl border border-white/10">
-                  <div className="flex text-amber-400 mb-4 space-x-1">
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                    <Star fill="currentColor" size={18} />
-                  </div>
-                  <p className="text-slate-300 text-lg italic mb-6">
-                    "El mejor colegio de la historia. Mi prima va y dice que le
-                    encanta."
-                  </p>
-                  <div className="font-bold">
-                    A. J. O.{' '}
-                    <span className="block text-sm font-normal text-slate-400">
-                      Familiar de alumna
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-12 text-center">
-                <a
-                  href={MICOLE_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm"
-                >
-                  Ver todas las opiniones en Micole <ExternalLink size={14} />
-                </a>
-              </div>
+          {/* CTA Final */}
+          <section className="bg-slate-900 text-white py-16 px-6 text-center my-20">
+            <div className="max-w-4xl mx-auto">
+              <h3 className="text-3xl md:text-4xl font-extrabold mb-6">
+                ¿Te interesa? <br/>
+                <span className="text-indigo-400">¡No te quedes sin conocernos de primera mano!</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setView('form')}
+                className="bg-white text-slate-900 px-8 py-4 rounded-xl font-bold text-lg hover:bg-indigo-50 transition-colors shadow-lg"
+              >
+                Reservar Plaza Ahora
+              </button>
             </div>
           </section>
 
           {/* FAQ */}
-          <section className="max-w-4xl mx-auto my-24 px-6">
+          <section className="max-w-4xl mx-auto my-24 px-6 pb-20">
             <h3 className="text-3xl font-extrabold text-center mb-12 text-slate-900">
               Preguntas Frecuentes
             </h3>
@@ -1387,7 +1349,7 @@ export default function App() {
                       placeholder="Ej. María García"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                       Email
                     </label>
@@ -1400,7 +1362,7 @@ export default function App() {
                       className="w-full bg-white border border-slate-200 rounded-xl p-4 text-slate-900"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                       Teléfono
                     </label>
@@ -1583,13 +1545,14 @@ export default function App() {
                             <span className="block text-sm font-bold text-slate-800 truncate">
                               {contact.name}
                             </span>
-                            <div
-                              className="flex items-center gap-1.5 text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-1.5 rounded w-fit max-w-full mt-1 break-all"
+                            <a
+                              href={`mailto:${contact.email}`}
+                              className="flex items-center gap-1.5 text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-1.5 rounded w-fit max-w-full mt-1 break-all hover:bg-indigo-100 transition-colors"
                               title={contact.email}
                             >
                               <Mail size={12} className="shrink-0" />
                               {contact.email}
-                            </div>
+                            </a>
                           </div>
                         </div>
                       );
