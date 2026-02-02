@@ -4,8 +4,7 @@ import {
   getAuth, 
   signInAnonymously, 
   onAuthStateChanged, 
-  signInWithCustomToken, 
-  User as FirebaseUser 
+  signInWithCustomToken
 } from 'firebase/auth';
 import {
   getFirestore,
@@ -151,7 +150,7 @@ const TOUR_STOPS = [
 const HIGH_DEMAND_THRESHOLD = 6;
 const MAX_CAPACITY = 15;
 
-const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error' | 'info', onClose: () => void }) => {
+const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(onClose, 4000);
     return () => clearTimeout(timer);
@@ -177,7 +176,7 @@ const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 
   );
 };
 
-const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, password, setPassword }: any) => {
+const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, password, setPassword }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
@@ -210,7 +209,7 @@ const DeleteConfirmModal = ({ isOpen, onClose, onConfirm, password, setPassword 
   );
 };
 
-const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
+const CountdownTimer = ({ targetDate }) => {
   const calculateTimeLeft = () => {
     const difference = +new Date(targetDate) - +new Date();
     if (difference > 0) {
@@ -247,7 +246,7 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
         {Object.keys(timeLeft).map((interval) => (
           <div key={interval} className="flex flex-col items-center bg-white/30 backdrop-blur-md rounded-lg p-2 min-w-[65px] border border-white/40 shadow-lg">
             <span className="text-xl md:text-2xl font-extrabold text-slate-800 drop-shadow-sm">
-              {timeLeft[interval as keyof typeof timeLeft]}
+              {timeLeft[interval]}
             </span>
             <span className="text-[10px] uppercase text-slate-600 font-bold tracking-widest">
               {interval}
@@ -260,16 +259,16 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
 };
 
 export default function App() {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState(null);
   const [view, setView] = useState('landing');
-  const [registrations, setRegistrations] = useState<any[]>([]);
-  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [registrations, setRegistrations] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scrolled, setScrolled] = useState(false);
-  const [slotStatus, setSlotStatus] = useState<any>({});
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [slotStatus, setSlotStatus] = useState({});
+  const [openFaq, setOpenFaq] = useState(null);
   const [formError, setFormError] = useState('');
-  const [toast, setToast] = useState<{msg: string, type: 'success' | 'error' | 'info'} | null>(null);
+  const [toast, setToast] = useState(null);
   const [formData, setFormData] = useState({
     parentName: '', email: '', phone: '', childName: '',
     childAge: '', interestedGrade: '', selectedDate: '',
@@ -284,15 +283,15 @@ export default function App() {
 
   // --- DELETE MODAL STATE ---
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedDeleteId, setSelectedDeleteId] = useState<string | null>(null);
+  const [selectedDeleteId, setSelectedDeleteId] = useState(null);
   const [deletePassword, setDeletePassword] = useState('');
 
   // Funciones auxiliares para rutas seguras (Compatibilidad Preview + Producción)
-  const getPublicDataRef = (colName: string) => collection(db, 'artifacts', appId, 'public', 'data', colName);
-  const getPublicDocRef = (colName: string, docId: string) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+  const getPublicDataRef = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+  const getPublicDocRef = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
 
   const slotOccupancy = useMemo(() => {
-    const counts: any = {};
+    const counts = {};
     registrations.forEach((reg) => {
       if (reg.selectedDate && reg.selectedTime) {
         const key = `${reg.selectedDate}_${reg.selectedTime}`;
@@ -316,7 +315,7 @@ export default function App() {
 
   const isBachillerato = formData.interestedGrade.includes('Bachillerato');
   
-  let relevantSlots: any[] = [];
+  let relevantSlots = [];
   if (formData.interestedGrade) {
     if (isBachillerato) {
       relevantSlots = []; 
@@ -364,7 +363,7 @@ export default function App() {
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date(),
         }));
-        data.sort((a: any, b: any) => b.createdAt - a.createdAt);
+        data.sort((a, b) => b.createdAt - a.createdAt);
         setRegistrations(data);
         setLoading(false);
       }, (error) => console.error("Error fetching registrations", error)
@@ -373,7 +372,7 @@ export default function App() {
     // Configuración de slots
     const unsubConfig = onSnapshot(query(getPublicDataRef(CONFIG_COLLECTION_NAME)),
       (snap) => {
-        const config: any = {};
+        const config = {};
         snap.docs.forEach((d) => (config[d.id] = d.data().isOpen));
         setSlotStatus(config);
       }, (error) => console.error("Error fetching config", error)
@@ -383,7 +382,7 @@ export default function App() {
     const unsubSlots = onSnapshot(query(getPublicDataRef(SLOTS_COLLECTION_NAME)),
       (snap) => {
         const slots = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        slots.sort((a: any, b: any) => a.date > b.date ? 1 : -1);
+        slots.sort((a, b) => a.date > b.date ? 1 : -1);
         setAvailableSlots(slots);
       }, (error) => console.error("Error fetching slots", error)
     );
@@ -391,23 +390,23 @@ export default function App() {
     return () => { unsubReg(); unsubConfig(); unsubSlots(); };
   }, [user]);
 
-  const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const showToast = (msg, type = 'info') => {
     setToast({ msg, type });
   };
 
-  const handleInputChange = (e: any) => {
+  const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     if (name === 'interestedGrade') setFormData((prev) => ({ ...prev, selectedDate: '', selectedTime: '' }));
     if (formError) setFormError('');
   };
 
-  const handleSlotSelect = (date: string, time: string) => {
+  const handleSlotSelect = (date, time) => {
     setFormData((prev) => ({ ...prev, selectedDate: date, selectedTime: time }));
     if (formError) setFormError('');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
     if (!formData.parentName || !formData.email || !formData.phone) return setFormError('Completa los datos de contacto.');
@@ -438,7 +437,7 @@ export default function App() {
   };
 
   // --- DELETE LOGIC ---
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = (id) => {
     setSelectedDeleteId(id);
     setDeletePassword('');
     setShowDeleteModal(true);
@@ -463,7 +462,7 @@ export default function App() {
     }
   };
 
-  const toggleSlotStatus = async (slotId: string, currentStatus: boolean) => {
+  const toggleSlotStatus = async (slotId, currentStatus) => {
     const newStatus = currentStatus === undefined ? false : !currentStatus;
     try {
       await setDoc(getPublicDocRef(CONFIG_COLLECTION_NAME, slotId), { isOpen: newStatus });
@@ -471,7 +470,7 @@ export default function App() {
     } catch (err) { console.error(err); }
   };
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = (e) => {
     e.preventDefault();
     if (adminPassInput === ADMIN_PASSWORD) {
       setView('admin');
@@ -482,7 +481,7 @@ export default function App() {
     }
   };
 
-  const handleAddSlot = async (e: React.FormEvent) => {
+  const handleAddSlot = async (e) => {
     e.preventDefault();
     if (!newSlotDate) return;
     try {
@@ -497,7 +496,7 @@ export default function App() {
     } catch (err) { console.error(err); }
   };
 
-  const handleDeleteSlot = async (id: string) => {
+  const handleDeleteSlot = async (id) => {
     if(!confirm('¿Eliminar esta fecha adicional?')) return;
     try {
       await deleteDoc(getPublicDocRef(SLOTS_COLLECTION_NAME, id));
@@ -505,7 +504,7 @@ export default function App() {
     } catch (err) { console.error(err); }
   };
    
-  const toggleFaq = (index: number) => setOpenFaq(openFaq === index ? null : index);
+  const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
   
   const exportToCSV = () => {
     if (registrations.length === 0) {
@@ -603,7 +602,7 @@ export default function App() {
         const startDateStr = `${slot.date}T${formData.selectedTime}:00`;
         const startDate = new Date(startDateStr);
         const endDate = new Date(startDate.getTime() + (2 * 60 * 60 * 1000));
-        const formatGCal = (date: Date) => date.toISOString().replace(/-|:|\.\d+/g, '');
+        const formatGCal = (date) => date.toISOString().replace(/-|:|\.\d+/g, '');
         datesParam = `&dates=${formatGCal(startDate)}/${formatGCal(endDate)}`;
       } catch (e) { console.error("Error parsing date", e); }
     }
@@ -1100,7 +1099,7 @@ export default function App() {
                         {isHighDemand && !isBlocked && <div className="absolute top-0 right-0 bg-amber-100 text-amber-700 text-[10px] font-bold px-3 py-1 rounded-bl-xl">Alta demanda</div>}
                         {isClosedByAdmin && <div className="absolute top-0 right-0 bg-red-100 text-red-700 text-[10px] font-bold px-3 py-1 rounded-bl-xl">Cerrado</div>}
                         <div className="flex flex-wrap gap-3">
-                          {slot.times.map((time: string) => (
+                          {slot.times.map((time) => (
                             <button key={time} type="button" disabled={isBlocked} onClick={() => handleSlotSelect(slot.label, time)} className={`px-6 py-3 rounded-xl text-sm font-bold transition-all ${isBlocked ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : isSelected ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-600 border border-slate-200 hover:border-indigo-300'}`}>
                               {time} {isFull && '(Completo)'}
                             </button>
